@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="te">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ప్రకాశం జ్యోతి | E-Paper</title>
+<style>
+:root{--red:#a20d18;--gold:#f4c542;--ink:#222;--paper:#fff}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,"Noto Sans Telugu",sans-serif;background:#f3f4f6;color:var(--ink)}
+header{background:var(--red);color:white;padding:14px 16px;text-align:center;border-bottom:4px solid var(--gold)}
+.brand{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
+.brand img{width:64px;height:64px;object-fit:contain;background:white;border-radius:8px;display:none}
+.brand h1{margin:0;font-size:clamp(23px,5vw,34px)}.tag{margin:5px 0 0;font-size:14px}
+nav{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;background:#fff;padding:10px;border-bottom:1px solid #ddd}
+nav a{color:var(--red);font-weight:bold;text-decoration:none;padding:7px 10px}
+main{max-width:1000px;margin:18px auto;padding:0 12px}
+.card{background:white;border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:0 2px 10px #0000000b}
+h2{margin:0 0 12px;font-size:21px;color:var(--red)}
+button,.button{background:var(--red);color:white;border:0;border-radius:8px;padding:11px 14px;font-size:15px;font-weight:bold;cursor:pointer}
+button.secondary{background:#4b5563}button:disabled{opacity:.45;cursor:not-allowed}
+input,select{max-width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:7px;background:white}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.small{font-size:13px;color:#555;line-height:1.5}
+#pdfCanvas{max-width:100%;height:auto;display:block;margin:auto;background:#fff;touch-action:none}
+#stage{position:relative;display:inline-block;max-width:100%;line-height:0;overflow:hidden}
+#selection{position:absolute;border:3px solid #e11d48;background:#e11d481a;display:none;pointer-events:none}
+#stageWrap{text-align:center;overflow:auto;background:#e5e7eb;padding:8px;border-radius:8px}
+#cuttings{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.clip{background:#fff;border:1px solid #ddd;border-radius:8px;padding:8px;overflow:hidden}
+.clip img{width:100%;height:auto;display:block}.clip .row{justify-content:space-between}
+footer{text-align:center;color:#666;padding:20px;font-size:12px}
+.notice{background:#fff7d6;border:1px solid #f1d36a;border-radius:8px;padding:10px;font-size:13px;line-height:1.5}
+@media(min-width:700px){.workspace{display:grid;grid-template-columns:1fr 280px;gap:14px}.workspace .card{margin-bottom:14px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><img id="logoPreview" alt="పేపర్ లోగో"><div><h1>ప్రకాశం జ్యోతి</h1><div class="tag">తెలుగు దినపత్రిక • E-Paper</div></div></div>
+</header>
+<nav><a href="#home">హోమ్</a><a href="#epaper">ఈ రోజు E-Paper</a><a href="#cuttings">న్యూస్ కటింగ్స్</a><a href="#admin">Admin</a></nav>
+<main id="home">
+  <section class="card">
+    <h2>ఈ రోజు వార్తలు</h2>
+    <p id="todayLine"></p>
+    <p class="small">పూర్తి పేపర్ చదవండి లేదా PDF పేజీ నుంచి వార్తను సెలెక్ట్ చేసి బ్రాండెడ్ కటింగ్ తయారు చేయండి.</p>
+    <a href="#epaper"><button> E-Paper తెరవండి </button></a>
+  </section>
+  <section class="card" id="admin">
+    <h2>Admin — PDF & Logo Upload</h2>
+    <div class="row"><label>పేపర్ లోగో: <input id="logoInput" type="file" accept="image/*"></label></div>
+    <div class="row"><label>పేపర్ PDF: <input id="pdfInput" type="file" accept="application/pdf,.pdf"></label></div>
+    <div class="row">
+      <label>ప్రచురణ తేదీ: <input id="pubDate" type="date"></label>
+      <label>వార్త శీర్షిక (ఐచ్ఛికం): <input id="headline" type="text" placeholder="వార్త శీర్షిక"></label>
+    </div>
+    <div class="notice">ఇది మొబైల్‌లో పరీక్షించగల ప్రారంభ నమూనా. ఈ వెర్షన్‌లో PDF/లోగో బ్రౌజర్‌లోనే ఉపయోగించబడతాయి. Admin login, cloud storage, public publishing, automatic news detection ఇంకా కనెక్ట్ చేయలేదు.</div>
+  </section>
+  <section class="card" id="epaper">
+    <h2>PDF E-Paper Viewer</h2>
+    <div class="row">
+      <button id="prev" class="secondary" disabled>← ముందు పేజీ</button>
+      <span id="pageLabel">PDF ఎంచుకోండి</span>
+      <button id="next" class="secondary" disabled>తర్వాత పేజీ →</button>
+    </div>
+    <p class="small">వార్తను కట్ చేయడానికి PDF పేజీపై వేలితో లేదా మౌస్‌తో లాగి బాక్స్ గీయండి.</p>
+    <div id="stageWrap"><div id="stage"><canvas id="pdfCanvas"></canvas><div id="selection"></div></div></div>
+    <div class="row"><button id="makeCut" disabled>ఎంచుకున్న వార్త కట్ చేయి</button><button id="clearSel" class="secondary" disabled>ఎంపిక తొలగించు</button></div>
+    <p class="small" id="status">PDF అప్‌లోడ్ చేసిన తర్వాత పేజీ ఇక్కడ కనిపిస్తుంది.</p>
+  </section>
+  <section class="card">
+    <h2>తయారు చేసిన న్యూస్ కటింగ్స్</h2>
+    <div id="cuttings"><p class="small">ఇంకా కటింగ్స్ తయారు చేయలేదు.</p></div>
+  </section>
+</main>
+<footer>© <span id="year"></span> ప్రకాశం జ్యోతి తెలుగు దినపత్రిక • E-Paper demo</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const canvas=$('pdfCanvas'), ctx=canvas.getContext('2d'), stage=$('stage'), sel=$('selection');
+  let pdfDoc=null, pageNum=1, scale=1, logoImg=null, dragStart=null, selection=null;
+  if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  const now = new Date();
+  $('todayLine').textContent = now.toLocaleDateString('te-IN',{day:'numeric',month:'long',year:'numeric'}) + ' • ' + now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  $('year').textContent=now.getFullYear();
+  $('pubDate').value = new Date().toISOString().slice(0,10);
+
+  $('logoInput').addEventListener('change', e=>{
+    const f=e.target.files[0]; if(!f)return;
+    const url=URL.createObjectURL(f); logoImg=new Image();
+    logoImg.onload=()=>{ $('logoPreview').src=url; $('logoPreview').style.display='block'; $('status').textContent='లోగో లోడ్ అయింది.'; };
+    logoImg.src=url;
+  });
+  $('pdfInput').addEventListener('change', async e=>{
+    const f=e.target.files[0]; if(!f)return;
+    if(!window.pdfjsLib){$('status').textContent='PDF viewer library లోడ్ కాలేదు. ఇంటర్నెట్ కనెక్షన్ చూసి మళ్లీ ప్రయత్నించండి.';return;}
+    try{
+      $('status').textContent='PDF లోడ్ అవుతోంది…';
+      pdfDoc=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
+      pageNum=1; await renderPage(); $('status').textContent='PDF సిద్ధంగా ఉంది. వార్త చుట్టూ బాక్స్ గీయండి.';
+    }catch(err){$('status').textContent='PDF తెరవలేకపోయాం. మరో PDF ప్రయత్నించండి.';console.error(err);}
+  });
+  async function renderPage(){
+    const page=await pdfDoc.getPage(pageNum);
+    const available=Math.min(window.innerWidth-48,900);
+    const base=page.getViewport({scale:1});
+    scale=Math.min(2.2, available/base.width);
+    const viewport=page.getViewport({scale});
+    const dpr=window.devicePixelRatio||1;
+    canvas.width=Math.floor(viewport.width*dpr);canvas.height=Math.floor(viewport.height*dpr);
+    canvas.style.width=viewport.width+'px';canvas.style.height=viewport.height+'px';
+    stage.style.width=viewport.width+'px';stage.style.height=viewport.height+'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    await page.render({canvasContext:ctx,viewport}).promise;
+    $('pageLabel').textContent=`పేజీ ${pageNum} / ${pdfDoc.numPages}`;
+    $('prev').disabled=pageNum<=1;$('next').disabled=pageNum>=pdfDoc.numPages;
+    $('makeCut').disabled=true;$('clearSel').disabled=true;selection=null;sel.style.display='none';
+  }
+  $('prev').onclick=async()=>{if(pdfDoc&&pageNum>1){pageNum--;await renderPage();}};
+  $('next').onclick=async()=>{if(pdfDoc&&pageNum<pdfDoc.numPages){pageNum++;await renderPage();}};
+  function point(e){const r=canvas.getBoundingClientRect();return {x:Math.max(0,Math.min(r.width,e.clientX-r.left)),y:Math.max(0,Math.min(r.height,e.clientY-r.top))};}
+  canvas.addEventListener('pointerdown',e=>{if(!pdfDoc)return;canvas.setPointerCapture(e.pointerId);dragStart=point(e);selection=null;sel.style.display='block';sel.style.left=dragStart.x+'px';sel.style.top=dragStart.y+'px';sel.style.width='0';sel.style.height='0';});
+  canvas.addEventListener('pointermove',e=>{if(!dragStart)return;const p=point(e),x=Math.min(p.x,dragStart.x),y=Math.min(p.y,dragStart.y),w=Math.abs(p.x-dragStart.x),h=Math.abs(p.y-dragStart.y);Object.assign(sel.style,{left:x+'px',top:y+'px',width:w+'px',height:h+'px'});selection={x,y,w,h};});
+  function finish(){if(!dragStart)return;dragStart=null;if(selection&&selection.w>12&&selection.h>12){$('makeCut').disabled=false;$('clearSel').disabled=false;$('status').textContent='కటింగ్ ప్రాంతం ఎంపికైంది. “వార్త కట్ చేయి” నొక్కండి.';}else{selection=null;sel.style.display='none';}}
+  canvas.addEventListener('pointerup',finish);canvas.addEventListener('pointercancel',finish);
+  $('clearSel').onclick=()=>{selection=null;sel.style.display='none';$('makeCut').disabled=true;$('clearSel').disabled=true;};
+  $('makeCut').onclick=()=>{
+    if(!selection)return;
+    const dpr=canvas.width/canvas.getBoundingClientRect().width;
+    const sx=Math.round(selection.x*dpr),sy=Math.round(selection.y*dpr),sw=Math.round(selection.w*dpr),sh=Math.round(selection.h*dpr);
+    const out=document.createElement('canvas'),o=out.getContext('2d');
+    const cropW=Math.max(1,sw),cropH=Math.max(1,sh),pad=18,headerH=logoImg?76:58,footerH=42;
+    out.width=cropW+pad*2;out.height=cropH+headerH+footerH+pad;
+    o.fillStyle='#fff';o.fillRect(0,0,out.width,out.height);
+    o.fillStyle='#a20d18';o.fillRect(0,0,out.width,headerH);
+    if(logoImg){const max=52,ratio=Math.min(max/logoImg.width,max/logoImg.height);const w=logoImg.width*ratio,h=logoImg.height*ratio;o.drawImage(logoImg,12,(headerH-h)/2,w,h);}
+    o.fillStyle='#fff';o.font='bold 22px Arial, sans-serif';o.textAlign='center';o.fillText('ప్రకాశం జ్యోతి',out.width/2+(logoImg?20:0),headerH/2+7);
+    o.drawImage(canvas,sx,sy,sw,sh,pad,headerH,cropW,cropH);
+    o.fillStyle='#a20d18';o.fillRect(0,out.height-footerH,out.width,footerH);
+    o.fillStyle='#fff';o.font='14px Arial, sans-serif';o.textAlign='left';
+    const d=$('pubDate').value||new Date().toISOString().slice(0,10);
+    o.fillText('తేదీ: '+d, pad, out.height-16);
+    o.textAlign='right';o.fillText('కటింగ్ సమయం: '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),out.width-pad,out.height-16);
+    const url=out.toDataURL('image/png');
+    const card=document.createElement('article');card.className='clip';
+    const title=document.createElement('strong');title.textContent=$('headline').value.trim()||'వార్త కటింగ్ — పేజీ '+pageNum;
+    const img=document.createElement('img');img.src=url;img.alt=title.textContent;
+    const row=document.createElement('div');row.className='row';
+    const download=document.createElement('a');download.href=url;download.download='prakasham-jyothi-clipping-'+Date.now()+'.png';download.textContent='PNG డౌన్‌లోడ్';download.className='button';download.style.textDecoration='none';download.style.fontSize='13px';
+    const share=document.createElement('button');share.textContent='షేర్';share.className='secondary';share.onclick=async()=>{try{const blob=await (await fetch(url)).blob();const file=new File([blob], 'news-clipping.png',{type:'image/png'});if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:title.textContent});}else{window.open(url,'_blank');}}catch(e){window.open(url,'_blank');}};
+    row.append(download,share);card.append(title,img,row);
+    if($('cuttings').querySelector('p'))$('cuttings').innerHTML='';
+    $('cuttings').prepend(card);$('status').textContent='కటింగ్ తయారైంది. PNG డౌన్‌లోడ్ చేసుకోండి.';
+    selection=null;sel.style.display='none';$('makeCut').disabled=true;$('clearSel').disabled=true;
+  };
+  window.addEventListener('resize',()=>{if(pdfDoc)renderPage();});
+})();
+</script>
+</body>
+</html>
